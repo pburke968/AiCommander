@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commander Forge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       START SCREEN
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-start" class="screen active">
+    <div class="start-bg"></div>
+    <div class="start-container">
+      <header class="start-header">
+        <div class="logo-mark">⬡</div>
+        <h1 class="logo-title">Commander Forge</h1>
+        <p class="logo-sub">A Browser-Based Commander Experience</p>
+      </header>
+
+      <div class="start-form">
+        <!-- Deck Import -->
+        <div class="form-section">
+          <label class="form-label">
+            <span class="label-num">01</span>
+            Import Deck List
+          </label>
+          <p class="form-hint">Paste a deck list in Moxfield, Archidekt, or MTGO text format. Your commander must be listed first or tagged with (Commander).</p>
+          <textarea
+            id="deck-input"
+            class="deck-textarea"
+            placeholder="1 Atraxa, Praetors' Voice (Commander)&#10;1 Doubling Season&#10;1 Caress of Phyrexia&#10;...&#10;&#10;// Or simply paste any Moxfield/Archidekt export"
+            spellcheck="false"
+          ></textarea>
+        </div>
+
+        <!-- Bracket Selection -->
+        <div class="form-section">
+          <label class="form-label">
+            <span class="label-num">02</span>
+            Select Bracket Level
+          </label>
+          <p class="form-hint">Determines both bot deck power and AI intelligence. Match your deck's power level for the best experience.</p>
+          <div class="bracket-grid">
+            <button class="bracket-btn active" data-bracket="1">
+              <span class="bracket-num">1</span>
+              <span class="bracket-name">Exhibition</span>
+              <span class="bracket-desc">Casual, precon-level. No combos, no tutors.</span>
+            </button>
+            <button class="bracket-btn" data-bracket="2">
+              <span class="bracket-num">2</span>
+              <span class="bracket-name">Core</span>
+              <span class="bracket-desc">Upgraded precons. Some synergies, basic tutors.</span>
+            </button>
+            <button class="bracket-btn" data-bracket="3">
+              <span class="bracket-num">3</span>
+              <span class="bracket-name">Powered</span>
+              <span class="bracket-desc">Strong synergies, combos, efficient removal.</span>
+            </button>
+            <button class="bracket-btn" data-bracket="4">
+              <span class="bracket-num">4</span>
+              <span class="bracket-name">Optimized</span>
+              <span class="bracket-desc">Near-cEDH. Fast mana, tutors, instant-speed wins.</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Validation Feedback -->
+        <div id="validation-panel" class="validation-panel hidden">
+          <div id="validation-messages"></div>
+        </div>
+
+        <!-- Start Button -->
+        <button id="btn-start-game" class="btn-primary" disabled>
+          <span class="btn-text">Validate Deck</span>
+          <span class="btn-icon">→</span>
+        </button>
+      </div>
+
+      <footer class="start-footer">
+        Card data provided by <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>. 
+        Magic: The Gathering is © Wizards of the Coast.
+      </footer>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       LOADING SCREEN
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-loading" class="screen">
+    <div class="loading-container">
+      <div class="loading-hex">⬡</div>
+      <h2 class="loading-title">Preparing the Battlefield</h2>
+      <p id="loading-status" class="loading-status">Fetching card data...</p>
+      <div class="loading-bar-wrap">
+        <div id="loading-bar" class="loading-bar"></div>
+      </div>
+      <p id="loading-detail" class="loading-detail"></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MULLIGAN SCREEN
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-mulligan" class="screen">
+    <div class="mulligan-container">
+      <h2 class="mulligan-title">Opening Hand</h2>
+      <p id="mulligan-info" class="mulligan-info">Mulligan count: 0 — You must keep or mulligan.</p>
+      <div id="mulligan-hand" class="mulligan-hand"></div>
+      <div class="mulligan-actions">
+        <button id="btn-mulligan" class="btn-secondary">Mulligan</button>
+        <button id="btn-keep" class="btn-primary">Keep Hand</button>
+      </div>
+      <div id="mulligan-scry" class="mulligan-scry hidden">
+        <p class="mulligan-scry-info">Place <span id="scry-count">0</span> card(s) on the bottom of your library.</p>
+        <div id="mulligan-scry-hand" class="mulligan-hand"></div>
+        <button id="btn-confirm-bottom" class="btn-primary" disabled>Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       GAME SCREEN — PLAYMAT
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-game" class="screen">
+
+    <!-- CARD HOVER PREVIEW -->
+    <div id="card-preview" class="card-preview hidden">
+      <img id="card-preview-img" src="" alt="" />
+    </div>
+
+    <!-- ERROR OVERLAY -->
+    <div id="error-overlay" class="error-overlay hidden">
+      <div class="error-box">
+        <h3 class="error-title">⚠ Game State Error</h3>
+        <p id="error-message" class="error-message"></p>
+        <button id="btn-dismiss-error" class="btn-secondary">Dismiss</button>
+      </div>
+    </div>
+
+    <!-- ZONE VIEWER OVERLAY (Graveyard / Exile) -->
+    <div id="zone-overlay" class="zone-overlay hidden">
+      <div class="zone-overlay-box">
+        <div class="zone-overlay-header">
+          <h3 id="zone-overlay-title">Graveyard</h3>
+          <button id="btn-close-zone" class="zone-close">✕</button>
+        </div>
+        <div id="zone-overlay-cards" class="zone-overlay-cards"></div>
+      </div>
+    </div>
+
+    <!-- COUNTER MODAL -->
+    <div id="counter-modal" class="counter-modal hidden">
+      <div class="counter-modal-box">
+        <h3 class="counter-modal-title">Adjust Counters</h3>
+        <div id="counter-list" class="counter-list"></div>
+        <div class="counter-add">
+          <select id="counter-type-select" class="counter-select">
+            <option value="+1/+1">+1/+1</option>
+            <option value="-1/-1">-1/-1</option>
+            <option value="loyalty">Loyalty</option>
+            <option value="charge">Charge</option>
+            <option value="time">Time</option>
+            <option value="quest">Quest</option>
+            <option value="age">Age</option>
+            <option value="custom">Custom</option>
+          </select>
+          <input id="counter-custom-name" class="counter-input" placeholder="Custom name" style="display:none" />
+          <button id="btn-add-counter" class="btn-secondary btn-sm">+ Add</button>
+        </div>
+        <button id="btn-close-counter" class="btn-primary btn-sm" style="margin-top:12px">Done</button>
+      </div>
+    </div>
+
+    <!-- COMPLEX KEYWORD MODAL -->
+    <div id="keyword-modal" class="keyword-modal hidden">
+      <div class="keyword-modal-box">
+        <h3 id="keyword-modal-title" class="keyword-modal-title">Manual Resolution Required</h3>
+        <p id="keyword-modal-body" class="keyword-modal-body"></p>
+        <button id="btn-close-keyword" class="btn-primary">Acknowledge & Resolve Manually</button>
+      </div>
+    </div>
+
+    <!-- STACK PANEL -->
+    <div id="stack-panel" class="stack-panel hidden">
+      <div class="stack-header">The Stack</div>
+      <div id="stack-items" class="stack-items"></div>
+    </div>
+
+    <!-- TOP BAR: Phase Tracker + Priority -->
+    <div class="game-topbar">
+      <div class="phase-tracker">
+        <div class="phase-steps" id="phase-steps">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      <div class="turn-indicator">
+        <span id="turn-active-player" class="turn-player-name">Your Turn</span>
+        <span id="turn-num" class="turn-num">Turn 1</span>
+      </div>
+      <div class="priority-controls">
+        <span id="priority-indicator" class="priority-who">Priority: You</span>
+        <button id="btn-pass-priority" class="btn-priority">Pass Priority (P)</button>
+        <button id="btn-end-turn" class="btn-end-turn">End Turn (E)</button>
+      </div>
+    </div>
+
+    <!-- ─── PLAYMAT GRID ─── -->
+    <div class="playmat">
+
+      <!-- BOT LEFT (Player 2) -->
+      <div class="player-zone bot-left" id="zone-p2">
+        <div class="player-header">
+          <div class="player-name" id="p2-name">Bot 2</div>
+          <div class="player-life" id="p2-life">40</div>
+        </div>
+        <div class="player-commander-zone">
+          <div class="zone-label">CMD</div>
+          <div class="card-row" id="p2-command-zone"></div>
+        </div>
+        <div class="player-battlefield" id="p2-battlefield">
+          <div class="bf-lands" id="p2-lands"></div>
+          <div class="bf-nonlands" id="p2-nonlands"></div>
+        </div>
+        <div class="player-hand-zone">
+          <div class="hand-count-display">
+            <span id="p2-hand-count">0</span> cards in hand
+          </div>
+          <div class="hand-facedown" id="p2-hand-display"></div>
+        </div>
+        <div class="player-utility-zones">
+          <div class="utility-zone" id="p2-library-btn" title="Library">
+            <div class="zone-label">LIB</div>
+            <div class="zone-count" id="p2-library-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p2-graveyard-btn" title="Graveyard">
+            <div class="zone-label">GY</div>
+            <div class="zone-count" id="p2-graveyard-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p2-exile-btn" title="Exile">
+            <div class="zone-label">EXL</div>
+            <div class="zone-count" id="p2-exile-count">0</div>
+          </div>
+        </div>
+        <div class="cmd-damage-row" id="p2-cmd-damage">
+          <!-- Commander damage received from each commander -->
+        </div>
+      </div>
+
+      <!-- BOT TOP (Player 3) -->
+      <div class="player-zone bot-top" id="zone-p3">
+        <div class="player-header">
+          <div class="player-name" id="p3-name">Bot 3</div>
+          <div class="player-life" id="p3-life">40</div>
+        </div>
+        <div class="player-commander-zone horiz">
+          <div class="zone-label">CMD</div>
+          <div class="card-row" id="p3-command-zone"></div>
+        </div>
+        <div class="player-battlefield horiz" id="p3-battlefield">
+          <div class="bf-lands" id="p3-lands"></div>
+          <div class="bf-nonlands" id="p3-nonlands"></div>
+        </div>
+        <div class="player-hand-zone horiz">
+          <div class="hand-count-display">
+            <span id="p3-hand-count">0</span> cards in hand
+          </div>
+        </div>
+        <div class="player-utility-zones horiz">
+          <div class="utility-zone" id="p3-library-btn" title="Library">
+            <div class="zone-label">LIB</div>
+            <div class="zone-count" id="p3-library-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p3-graveyard-btn" title="Graveyard">
+            <div class="zone-label">GY</div>
+            <div class="zone-count" id="p3-graveyard-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p3-exile-btn" title="Exile">
+            <div class="zone-label">EXL</div>
+            <div class="zone-count" id="p3-exile-count">0</div>
+          </div>
+        </div>
+        <div class="cmd-damage-row" id="p3-cmd-damage"></div>
+      </div>
+
+      <!-- BOT RIGHT (Player 4) -->
+      <div class="player-zone bot-right" id="zone-p4">
+        <div class="player-header">
+          <div class="player-name" id="p4-name">Bot 4</div>
+          <div class="player-life" id="p4-life">40</div>
+        </div>
+        <div class="player-commander-zone">
+          <div class="zone-label">CMD</div>
+          <div class="card-row" id="p4-command-zone"></div>
+        </div>
+        <div class="player-battlefield" id="p4-battlefield">
+          <div class="bf-lands" id="p4-lands"></div>
+          <div class="bf-nonlands" id="p4-nonlands"></div>
+        </div>
+        <div class="player-hand-zone">
+          <div class="hand-count-display">
+            <span id="p4-hand-count">0</span> cards in hand
+          </div>
+          <div class="hand-facedown" id="p4-hand-display"></div>
+        </div>
+        <div class="player-utility-zones">
+          <div class="utility-zone" id="p4-library-btn" title="Library">
+            <div class="zone-label">LIB</div>
+            <div class="zone-count" id="p4-library-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p4-graveyard-btn" title="Graveyard">
+            <div class="zone-label">GY</div>
+            <div class="zone-count" id="p4-graveyard-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p4-exile-btn" title="Exile">
+            <div class="zone-label">EXL</div>
+            <div class="zone-count" id="p4-exile-count">0</div>
+          </div>
+        </div>
+        <div class="cmd-damage-row" id="p4-cmd-damage"></div>
+      </div>
+
+      <!-- CENTER: Shared Zones -->
+      <div class="center-zone">
+        <div class="emblem-dungeon-zone" id="shared-emblems">
+          <div class="zone-label">EMBLEMS &amp; DUNGEONS</div>
+          <div id="emblem-list" class="emblem-list"></div>
+        </div>
+        <div id="mana-pool-display" class="mana-pool-display">
+          <div class="mana-pool-label">Mana Pool</div>
+          <div class="mana-symbols" id="mana-symbols-row">
+            <span class="mana-pip" data-color="W" id="mana-W">W: 0</span>
+            <span class="mana-pip" data-color="U" id="mana-U">U: 0</span>
+            <span class="mana-pip" data-color="B" id="mana-B">B: 0</span>
+            <span class="mana-pip" data-color="R" id="mana-R">R: 0</span>
+            <span class="mana-pip" data-color="G" id="mana-G">G: 0</span>
+            <span class="mana-pip" data-color="C" id="mana-C">C: 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLAYER (You — Player 1, bottom) -->
+      <div class="player-zone player-self" id="zone-p1">
+        <div class="player-utility-zones">
+          <div class="utility-zone" id="p1-library-btn" title="Library">
+            <div class="zone-label">LIB</div>
+            <div class="zone-count" id="p1-library-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p1-graveyard-btn" title="Graveyard">
+            <div class="zone-label">GY</div>
+            <div class="zone-count" id="p1-graveyard-count">0</div>
+          </div>
+          <div class="utility-zone clickable" id="p1-exile-btn" title="Exile">
+            <div class="zone-label">EXL</div>
+            <div class="zone-count" id="p1-exile-count">0</div>
+          </div>
+          <div class="utility-zone" id="p1-commander-zone-btn" title="Command Zone">
+            <div class="zone-label">CMD</div>
+            <div class="card-row" id="p1-command-zone"></div>
+          </div>
+        </div>
+        <div class="player-battlefield" id="p1-battlefield">
+          <div class="bf-lands" id="p1-lands"></div>
+          <div class="bf-nonlands" id="p1-nonlands"></div>
+        </div>
+        <div class="player-bottom-bar">
+          <div class="player-info-panel">
+            <div class="player-name-self" id="p1-name">You</div>
+            <div class="player-life-self" id="p1-life">40</div>
+            <div class="cmd-damage-row" id="p1-cmd-damage"></div>
+          </div>
+          <div class="player-hand-self" id="p1-hand"></div>
+        </div>
+      </div>
+
+    </div><!-- /playmat -->
+  </div><!-- /screen-game -->
+
+  <!-- ═══════════════════════════════════════════════
+       WIN / LOSS SCREEN
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-result" class="screen">
+    <div class="result-container">
+      <div class="result-icon" id="result-icon">⬡</div>
+      <h2 class="result-title" id="result-title">Victory</h2>
+      <p class="result-sub" id="result-sub">You outlasted all opponents.</p>
+      <button id="btn-play-again" class="btn-primary">Play Again</button>
+    </div>
+  </div>
+
+  <!-- JS Modules -->
+  <script src="js/botDecks.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/validation.js"></script>
+  <script src="js/gameState.js"></script>
+  <script src="js/rulesEngine.js"></script>
+  <script src="js/botAI.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
